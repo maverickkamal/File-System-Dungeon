@@ -2,8 +2,10 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, DirectoryTree, DataTable
 from textual.reactive import reactive
 from pathlib import Path
+from typing import Optional
 from src.ui.widgets import Sidebar, RoomView
 from src.engine.scanner import Scanner
+from src.ui.screen import CombatModal
 
 class FileSystemDungeonApp(App):
     """ A TUI RPG exploring the file system as dungeons. """
@@ -43,6 +45,7 @@ class FileSystemDungeonApp(App):
     ]
 
     current_path = reactive(Path.home())
+    current_entities = {}
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -57,23 +60,46 @@ class FileSystemDungeonApp(App):
 
         self.current_path = Path(event.path)
         self.scan_current_room()
+    
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        row_index = event.cursor_row
+        if row_index < 0 or row_index >= len(self.current_entities):
+            return
+        entity = self.current_entities.get(row_index)
+        if not entity:
+            return
+        
+        if entity.get('is_dir'):
+            return
+        
+        self.push_screen(CombatModal(entity), self.handle_combat_result)
+
+    def handle_combat_result(self, result: Optional[str]) -> None:
+        if result == "run":
+            self.notify("You fled safely!")
+        elif result == "attack":
+            self.notify("Attacked! (Combat Logic Pending)")
+        elif result == "inspect":
+            self.notify("Inspecting...... (Pending)")
 
     def scan_current_room(self) -> None:
 
         result = Scanner.scan_room(self.current_path)
         table = self.query_one(DataTable)
         table.clear()
+        self.current_entities = {}
 
         if result.access_denied:
             table.add_row("LOCKED GATE", "Access Denied", "---", "---")
             return
-        for entity in result.entities:
+        for index, entity in enumerate(result.entities):
             table.add_row(
                 entity["name"],
                 entity["type"],
                 str(entity["hp"]),
                 str(entity["size_bytes"])
             )
+            self.current_entities[index] = entity
         self.sub_title = str(self.current_path)
     
     def action_toggle_dark(self) -> None:
