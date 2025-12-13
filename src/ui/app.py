@@ -1,11 +1,12 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, DirectoryTree, DataTable
+from textual.widgets import Header, Footer, DirectoryTree, DataTable, Label
 from textual.reactive import reactive
 from pathlib import Path
 from typing import Optional
 from src.ui.widgets import Sidebar, RoomView
 from src.engine.scanner import Scanner
 from src.ui.screen import CombatModal
+from src.engine.player import Player
 
 class FileSystemDungeonApp(App):
     """ A TUI RPG exploring the file system as dungeons. """
@@ -46,6 +47,7 @@ class FileSystemDungeonApp(App):
 
     current_path = reactive(Path.home())
     current_entities = {}
+    player = Player()
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -55,6 +57,14 @@ class FileSystemDungeonApp(App):
 
     def on_mount(self) -> None:
         self.scan_current_room()
+        self.update_sidebar_stats()
+
+    def update_sidebar_stats(self) -> None:
+        try:
+            self.query_one("#stats-title", Label).update(f"Player Level: {self.player.level}")
+
+        except:
+            pass
 
     def on_directory_tree_directory_selected(self, event: DirectoryTree.DirectorySelected) -> None:
 
@@ -72,15 +82,19 @@ class FileSystemDungeonApp(App):
         if entity.get('is_dir'):
             return
         
-        self.push_screen(CombatModal(entity), self.handle_combat_result)
+        self.push_screen(CombatModal(entity, self.player), self.handle_combat_result)
 
     def handle_combat_result(self, result: Optional[str]) -> None:
+        self.update_sidebar_stats()
+
         if result == "run":
             self.notify("You fled safely!")
-        elif result == "attack":
-            self.notify("Attacked! (Combat Logic Pending)")
-        elif result == "inspect":
-            self.notify("Inspecting...... (Pending)")
+        elif result == "victory":
+            self.notify("Victory! You looted the foe")
+        elif result == "defeat":
+            self.notify("You died... Respawning...", severity="error")
+            self.player.hp = self.player.max_hp
+            self.update_sidebar_stats()
 
     def scan_current_room(self) -> None:
 
@@ -89,17 +103,20 @@ class FileSystemDungeonApp(App):
         table.clear()
         self.current_entities = {}
 
+        row_count = 0
+
         if result.access_denied:
             table.add_row("LOCKED GATE", "Access Denied", "---", "---")
             return
-        for index, entity in enumerate(result.entities):
+        for entity in result.entities:
             table.add_row(
                 entity["name"],
                 entity["type"],
                 str(entity["hp"]),
                 str(entity["size_bytes"])
             )
-            self.current_entities[index] = entity
+            self.current_entities[row_count] = entity
+            row_count += 1
         self.sub_title = str(self.current_path)
     
     def action_toggle_dark(self) -> None:

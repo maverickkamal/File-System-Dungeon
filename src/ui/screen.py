@@ -1,7 +1,9 @@
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
-from textual.widgets import Label, Button, Static
+from textual.widgets import Label, Button, Static, RichLog
 from textual.containers import Grid, Horizontal, Vertical, Container
+from src.engine.player import Player
+from src.engine.combat import CombatEngine
 
 class CombatModal(ModalScreen):
 
@@ -13,10 +15,10 @@ class CombatModal(ModalScreen):
     #dialog {
         grid-size: 2;
         grid-gutter: 1 2;
-        grid-rows: 1fr 3fr;
+        grid-rows: 1fr 3fr 1fr;
         padding: 0 1;
-        width: 60;
-        height: 11;
+        width: 70;
+        height: 20;
         border: thick $background 80%;
         background: $surface;
     }
@@ -26,14 +28,27 @@ class CombatModal(ModalScreen):
         height: 1fr;
         width: 1fr;
         content-align: center middle;
+        text-align: center;
+        background: $primary-darken-2;
     }
 
-    #stats {
+    #stats_container {
         column-span: 2;
         height: 1fr;
+        layout: horizontal;
+    }
+
+    .stat-box {
         width: 1fr;
-        content-align: center middle;
-        text-align: center;
+        border: solid $accent;
+        padding: 1;
+    }
+
+    #log {
+        column-span: 2;
+        height: 1fr;
+        border: solid $secondary;
+        overflow-y: scroll;
     }
 
     #buttons {
@@ -41,6 +56,7 @@ class CombatModal(ModalScreen):
         height: auto;
         width: 1fr;
         align: center bottom;
+        margin-top: 1;
     }
 
     Button {
@@ -49,30 +65,65 @@ class CombatModal(ModalScreen):
     }
     """
 
-    def __init__(self, entity_data: dict):
+    def __init__(self, entity_data: dict, player: Player):
         super().__init__()
         self.entity_data = entity_data
+        self.player = player
 
     def compose(self) -> ComposeResult:
         with Grid(id="dialog"):
             yield Label(f"ENCOUNTER: {self.entity_data['name']}", id="question")
 
-            stats_text = (
-                f"Type: {self.entity_data['type']}\n"
-                f"HP: {self.entity_data['hp']} / {self.entity_data['max_hp']}\n"
-                f"Size: {self.entity_data['size_bytes']} bytes"
-            )
-            yield Label(stats_text, id="stats")
+            with Container(id="stats_container"):
+                yield Label(self._get_enemy_stats_text(), id="enemy_stats", classes="stat-box")
+                yield Label(self._get_player_stats_text(), id="player_stats", classes="stat-box")
+
+            yield RichLog(id="log", highlight=True, markup=True)
 
             with Horizontal(id="buttons"):
                 yield Button("Attack", variant="error", id="btn_attack")
                 yield Button("Inspect", variant="primary", id="btn_inspect")
                 yield Button("Run", variant="default", id="btn_run")
+    def _get_enemy_stats_text(self) -> str:
+        return (
+            f"[bold red]ENEMY[/]\n"
+            f"Type: {self.entity_data['type']}\n"
+            f"HP: {self.entity_data['hp']} / {self.entity_data['max_hp']}\n"
+        )
+    
+    def _get_player_stats_text(self) -> str:
+        return (
+            f"[bold green]PLAYER[/]\n"
+            f"Lv1: {self.player.level}\n"
+            f"HP: {self.player.hp} / {self.player.max_hp}"
+        )
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        log = self.query_one(RichLog)
+
         if event.button.id == "btn_run":
             self.dismiss("run")
-        elif event.button.id == "btn_attack":
-            self.dismiss("attack")
         elif event.button.id == "btn_inspect":
-            self.dismiss("inspect")
+            log.write(f"Size: {self.entity_data['size_bytes']} bytes")
+            log.write(f"Path: {self.entity_data['path']}")
+        elif event.button.id == "btn_attack":
+            self._handle_attack(log)
+        elif event.button.id == "btn_leave":
+            self.dismiss()
+
+    def _handle_attack(self, log: RichLog) -> None:
+        logs = CombatEngine.resolve_turn(self.player, self.entity_data)
+        for msg in logs:
+            log.write(msg)
+        
+        self.query_one("#enemy_stats", Label).update(self._get_enemy_stats_text())
+        self.query_one("#player_stats", Label).update(self._get_player_stats_text())
+
+        if self.entity_data['hp'] <= 0:
+            log.write("[bold gold]VICTORY![/]")
+            self.query_one("#buttons").remove()
+            self.mount(Button("Loot & Leave", variant="success", id="btn_leave"))
+
+        if self.player.hp <= 0:
+            log.write("[bold red]DEFEATED![/]")
+            self.dismiss("defeat")
