@@ -7,6 +7,7 @@ from src.ui.widgets import Sidebar, RoomView
 from src.engine.scanner import Scanner
 from src.ui.screen import CombatModal
 from src.engine.player import Player
+from src.engine.persistence import SaveManager
 
 class FileSystemDungeonApp(App):
     """ A TUI RPG exploring the file system as dungeons. """
@@ -48,6 +49,8 @@ class FileSystemDungeonApp(App):
     current_path = reactive(Path.home())
     current_entities = {}
     player = Player()
+    save_manager = SaveManager()
+    active_combat_entity = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -56,12 +59,13 @@ class FileSystemDungeonApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
+        self.save_manager.load_game(self.player)
         self.scan_current_room()
         self.update_sidebar_stats()
 
     def update_sidebar_stats(self) -> None:
         try:
-            self.query_one("#stats-title", Label).update(f"Player Level: {self.player.level}")
+            self.query_one("#stats-title", Label).update(f"Player Level: {self.player.level}\nXP: {self.player.xp}")
 
         except:
             pass
@@ -79,9 +83,10 @@ class FileSystemDungeonApp(App):
         if not entity:
             return
         
-        if entity.get('is_dir'):
+        if entity.get('is_dir') or entity.get('type') == 'Looted':
             return
         
+        self.active_combat_entity = entity
         self.push_screen(CombatModal(entity, self.player), self.handle_combat_result)
 
     def handle_combat_result(self, result: Optional[str]) -> None:
@@ -91,14 +96,21 @@ class FileSystemDungeonApp(App):
             self.notify("You fled safely!")
         elif result == "victory":
             self.notify("Victory! You looted the foe")
+
+            if self.active_combat_entity:
+                self.save_manager.mark_defeated(self.active_combat_entity['path'])
+                self.save_manager.save_game(self.player)
+                self.scan_current_room()
+
         elif result == "defeat":
             self.notify("You died... Respawning...", severity="error")
             self.player.hp = self.player.max_hp
+            self.save_manager.save_game(self.player)
             self.update_sidebar_stats()
 
     def scan_current_room(self) -> None:
 
-        result = Scanner.scan_room(self.current_path)
+        result = Scanner.scan_room(self.current_path, self.save_manager)
         table = self.query_one(DataTable)
         table.clear()
         self.current_entities = {}

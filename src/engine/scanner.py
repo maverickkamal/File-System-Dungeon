@@ -15,9 +15,10 @@ class Scanner:
     """Will handle file system scanning and entity generation."""
 
     @staticmethod
-    def scan_room(path: Path) -> ScanResult:
+    def scan_room(path: Path, save_manager=None) -> ScanResult:
         """
         Scans a directory (Room) and returns a list of entities (Files/Monsters).
+        Also checks save_manager for defeated status if provided
         """
 
         entities = []
@@ -37,6 +38,11 @@ class Scanner:
                 if item.is_dir():
                     stats["type"] = "Portal"
                     stats["hp"] = "N/A"
+                else:
+                    if save_manager and save_manager.is_defeated(str(item)):
+                        stats["hp"] = 0
+                        stats["type"] = "Looted"
+                        stats["name"] = f"[x] {stats['name']}"
 
                 entities.append(stats)
         except PermissionError:

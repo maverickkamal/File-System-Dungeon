@@ -31,3 +31,18 @@ class Player:
         self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
         self.max_hp += 10
         self.hp = self.max_hp
+
+    def to_dict(self) -> dict:
+        return {
+            "hp": self.hp,
+            "max_hp": self.max_hp,
+            "level": self.level,
+            "xp": self.xp,
+            "xp_to_next_level": self.xp_to_next_level
+        }
+    def from_dict(self, data: dict) -> None:
+        self.hp = data.get("hp", 100)
+        self.max_hp = data.get("max_hp", 100)
+        self.level = data.get("level", 1)
+        self.xp = data.get("xp", 0)
+        self.xp_to_next_level = data.get("xp_to_next_level", 100)
