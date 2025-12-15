@@ -1,6 +1,6 @@
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
-from textual.widgets import Label, Button, Static, RichLog
+from textual.widgets import Label, Button, Static, RichLog, DataTable
 from textual.containers import Grid, Horizontal, Vertical, Container
 from src.engine.player import Player
 from src.engine.combat import CombatEngine
@@ -127,3 +127,48 @@ class CombatModal(ModalScreen):
         if self.player.hp <= 0:
             log.write("[bold red]DEFEATED![/]")
             self.dismiss("defeat")
+
+class InventoryModal(ModalScreen):
+
+    CSS = """"
+    InventoryModal {
+        align: center middle;
+    }
+    #inventory-dialog {
+        grid-size: 1;
+        grid-gutter: 1;
+        grid-rows: 1fr 3;
+        padding: 0 1;
+        width: 60;
+        height: 80%;
+        border: thick $background 80%;
+        background: $surface;
+    }
+    #inventory-table {
+        height: 1fr;
+    }
+    """
+
+    def __init__(self, inventory: list):
+        self.inventory = inventory
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Label("Inventory", id="title"),
+            DataTable(id="inventory-table"),
+            Button("Close", variant="primary", id="close"),
+            id="inventory-dialog",
+        )
+
+    def on_mount(self) -> None:
+        table = self.query_one("#inventory-table", DataTable)
+        table.cursor_type = 'row'
+        table.add_columns("Name", "Type", "Size")
+
+        for item in self.inventory:
+            table.add_row(item.get("name", "Unknown"), item.get("type", "?"), str(item.get("size_bytes", 0)))
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close":
+            self.dismiss()

@@ -9,6 +9,7 @@ from src.ui.screen import CombatModal
 from src.engine.player import Player
 from src.engine.persistence import SaveManager
 from src.engine.combat import CombatEngine
+from src.ui.screen import InventoryModal
 
 class FileSystemDungeonApp(App):
     """ A TUI RPG exploring the file system as dungeons. """
@@ -45,6 +46,7 @@ class FileSystemDungeonApp(App):
     BINDINGS = [
         ("d", "toggle_dark", "Toggle dark mode"),
         ("q", "quit", "Quit"),
+        ("i", "open_inventory", "Inventory")
     ]
 
     current_path = reactive(Path.home())
@@ -84,7 +86,11 @@ class FileSystemDungeonApp(App):
         if not entity:
             return
         
-        if entity.get('is_dir') or entity.get('type') == 'Looted':
+        if entity.get('is_dir'):
+            return
+        
+        if entity.get('type') == 'Looted':
+            self.notify("Already looted.")
             return
         
         self.active_combat_entity = entity
@@ -105,6 +111,11 @@ class FileSystemDungeonApp(App):
                 else:
                     self.notify(f"Gained {xp_gain} XP!")
 
+                loot_item = self.active_combat_entity.copy()
+                loot_item['name'] = f"Essence of {loot_item['name']}"
+                self.player.add_item(loot_item)
+                self.notify(f"Picked up: {loot_item['name']}")
+
                 self.save_manager.mark_defeated(self.active_combat_entity['path'])
                 self.save_manager.save_game(self.player)
                 self.scan_current_room()
@@ -114,6 +125,9 @@ class FileSystemDungeonApp(App):
             self.player.hp = self.player.max_hp
             self.save_manager.save_game(self.player)
             self.update_sidebar_stats()
+    
+    def action_open_inventory(self) -> None:
+        self.push_screen(InventoryModal(self.player.inventory))
 
     def scan_current_room(self) -> None:
         
