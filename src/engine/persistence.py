@@ -46,3 +46,14 @@ class SaveManager:
     
     def is_defeated(self, file_path: str) -> bool:
         return file_path in self.dungeon_data
+    
+    def mark_visited(self, path: str) -> None:
+        if path not in self.dungeon_data:
+            self.dungeon_data[path] = {}
+
+        self.dungeon_data[path]["visited"] = True
+        self.dungeon_data[path]["last_visited"] = datetime.now().isoformat()
+    
+    def is_visited(self, path: str) -> bool:
+        data = self.dungeon_data.get(path, {})
+        return data.get("visited", False)

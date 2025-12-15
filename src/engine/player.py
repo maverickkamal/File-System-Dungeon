@@ -21,10 +21,11 @@ class Player:
         return actual_heal
     def gain_xp(self, amount: int) -> bool:
         self.xp += amount
-        if self.xp >= self.xp_to_next_level:
+        leveled_up = False
+        while self.xp >= self.xp_to_next_level:
             self._level_up()
-            return True
-        return False
+            leveled_up = True
+        return leveled_up
     def _level_up(self):
         self.level += 1
         self.xp -= self.xp_to_next_level

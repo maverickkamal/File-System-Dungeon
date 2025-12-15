@@ -8,6 +8,7 @@ from src.engine.scanner import Scanner
 from src.ui.screen import CombatModal
 from src.engine.player import Player
 from src.engine.persistence import SaveManager
+from src.engine.combat import CombatEngine
 
 class FileSystemDungeonApp(App):
     """ A TUI RPG exploring the file system as dungeons. """
@@ -98,6 +99,12 @@ class FileSystemDungeonApp(App):
             self.notify("Victory! You looted the foe")
 
             if self.active_combat_entity:
+                xp_gain = CombatEngine.calculate_xp_reward(self.active_combat_entity)
+                if self.player.gain_xp(xp_gain):
+                    self.notify(f"LEVEL UP! You are now level {self.player.level}!", severity="warning")
+                else:
+                    self.notify(f"Gained {xp_gain} XP!")
+
                 self.save_manager.mark_defeated(self.active_combat_entity['path'])
                 self.save_manager.save_game(self.player)
                 self.scan_current_room()
@@ -109,6 +116,17 @@ class FileSystemDungeonApp(App):
             self.update_sidebar_stats()
 
     def scan_current_room(self) -> None:
+        
+        current_path_str = str(self.current_path)
+        if not self.save_manager.is_visited(current_path_str):
+            self.save_manager.mark_visited(current_path_str)
+
+            if self.player.gain_xp(10):
+                self.notify(f"LEVEL UP! You are now level {self.player.level}!")
+            else:
+                self.notify("New Room Discoveres! +10 XP")
+            self.save_manager.save_game(self.player)
+            self.update_sidebar_stats()
 
         result = Scanner.scan_room(self.current_path, self.save_manager)
         table = self.query_one(DataTable)
@@ -132,4 +150,4 @@ class FileSystemDungeonApp(App):
         self.sub_title = str(self.current_path)
     
     def action_toggle_dark(self) -> None:
-        self.dark = not self.dark
+        self.theme = "textual-light" if self.theme == "textual-dark" else "textual-dark"
