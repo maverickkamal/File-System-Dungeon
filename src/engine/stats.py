@@ -5,11 +5,11 @@ class StatFactory:
     """Handles game statistics for file entities"""
 
     TYPE_MAPPING = {
-        "Construct": {".py", ".js", ".c", ".rs", ".java", ".go", ".cpp", ".ts"},
-        "Illusion": {".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mov", ".avi", ".mkv", ".svg"},
-        "Archive": {".zip", ".tar", ".gz", ".rar", ".7z", ".bzz"},
-        "Boss": {".exe", ".dll", ".bin", ".sys", ".bat", ".sh", ".msi", ".app"},
-        "Lore": {".txt", ".md", ".json", ".log", ".xml", ".yml", ".yaml"}
+        "Construct": {".py", ".js", "jsx", ".ts", ".html", ".css", ".scss" ".c", ".rs", ".java", ".go", ".cpp", ".ts"},
+        "Illusion": {".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mov", ".avi", ".mkv", ".svg", ".bmp", ".ico", ".mp3", ".wav", ".ogg"},
+        "Archive": {".zip", ".tar", ".gz", ".rar", ".7z", ".bzz", ".iso"},
+        "Boss": {".exe", ".dll", ".bin", ".sys", ".bat", ".sh", ".msi", ".app", ".info", ".cmd"},
+        "Lore": {".txt", ".md", ".json", ".log", ".xml", ".yml", ".yaml", ".ini", ".cfg", ".csv", ".toml", ".env"}
     }
 
     HP_PER_KB = 1
@@ -27,12 +27,15 @@ class StatFactory:
         except (FileNotFoundError, PermissionError):
             size = 0
 
+        entity_type = cls._determine_type(file_path.suffix)
+
         return {
             "name": file_path.name,
             "path": str(file_path),
             "hp": cls._calculate_hp(size),
             "max_hp": cls._calculate_hp(size),
-            "type": cls._determine_type(file_path.suffix),
+            "type": entity_type,
+            "color": cls._get_color(entity_type),
             "size_bytes": size,
             "is_dir": file_path.is_dir()
 
@@ -54,3 +57,16 @@ class StatFactory:
                 return entity_type
             
         return "Minion"
+    
+    @staticmethod
+    def _get_color(entity_type: str) -> str:
+        mapping = {
+            "Boss": "bold red",
+            "Construct": "bold blue",
+            "Iluusion": "bold magenta",
+            "Lore": "bold yellow",
+            "Archive": "bold gold",
+            "Portal": "bold cyan",
+            "Minion": "white"
+        }
+        return mapping.get(entity_type, "white")
