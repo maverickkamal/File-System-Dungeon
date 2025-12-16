@@ -7,9 +7,9 @@ class PlayerStats(Static):
     
     def compose(self) -> ComposeResult:
         yield Label("Player Stats", id="stats-title")
-        yield Label("HP: 100/100")
-        yield Label("Level: 1")
-        yield Label("XP: 0/100")
+        yield Label("HP: ---/---", id="stats-hp")
+        yield Label("Level: 1", id="stats-level")
+        yield Label("XP: 0/---", id="stats-xp")
 
 class Sidebar(Container):
 

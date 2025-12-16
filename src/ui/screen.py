@@ -83,6 +83,8 @@ class CombatModal(ModalScreen):
             with Horizontal(id="buttons"):
                 yield Button("Attack", variant="error", id="btn_attack")
                 yield Button("Inspect", variant="primary", id="btn_inspect")
+                if self.entity_data.get("type") == "Lore":
+                    yield Button("Read", variant="warning", id="btn_read")
                 yield Button("Run", variant="default", id="btn_run")
     def _get_enemy_stats_text(self) -> str:
         return (
@@ -94,7 +96,7 @@ class CombatModal(ModalScreen):
     def _get_player_stats_text(self) -> str:
         return (
             f"[bold green]PLAYER[/]\n"
-            f"Lv1: {self.player.level}\n"
+            f"Lv: {self.player.level}\n"
             f"HP: {self.player.hp} / {self.player.max_hp}"
         )
     
@@ -104,8 +106,13 @@ class CombatModal(ModalScreen):
         if event.button.id == "btn_run":
             self.dismiss("run")
         elif event.button.id == "btn_inspect":
-            log.write(f"Size: {self.entity_data['size_bytes']} bytes")
-            log.write(f"Path: {self.entity_data['path']}")
+            blocks = self.entity_data.get('size_bytes', 0)
+            msg = f"Path: {self.entity_data['path']}\nSize: {blocks} bytes"
+            log.write(f"[bold cyan]INSPECT:[/] {msg}")
+            self.app.notify(f"Inspect: {blocks} bytes", title=self.entity_data['name'])
+        elif event.button.id == "btn_read":
+            self.dismiss("read")
+
         elif event.button.id == "btn_attack":
             self._handle_attack(log)
         elif event.button.id == "btn_leave":
@@ -129,15 +136,14 @@ class CombatModal(ModalScreen):
             self.dismiss("defeat")
 
 class InventoryModal(ModalScreen):
-
-    CSS = """"
+    CSS = """
     InventoryModal {
         align: center middle;
     }
     #inventory-dialog {
         grid-size: 1;
         grid-gutter: 1;
-        grid-rows: 1fr 3;
+        grid-rows: 1fr 3fr;
         padding: 0 1;
         width: 60;
         height: 80%;
@@ -172,3 +178,53 @@ class InventoryModal(ModalScreen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "close":
             self.dismiss()
+
+
+class LoreModal(ModalScreen):
+    CSS = """
+    LoreModal {
+        align: center middle;
+    }
+    #lore-dialog {
+        width: 80;
+        height: 80%;
+        border: thick $gold;
+        background: $surface;
+        padding: 1;
+    }
+    #lore-content {
+        height: 1fr;
+        border: solid $secondary;
+        overflow-y: scroll;
+        margin-bottom: 1;
+    }
+    """
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Label(f"Reading: {self.file_path}", id="title"),
+            RichLog(id="lore-content", highlight=True, markup=False),
+            Button("Close", variant="primary", id="close"),
+            id="lore-dialog",
+        )
+
+    def on_mount(self) -> None:
+        log = self.query_one(RichLog)
+        try:
+            with open(self.file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read(2000)
+                if len(content) == 0:
+                    log.write("The file is empty.")
+                else:
+                    log.write(content)
+                if len(content) == 2000:
+                    log.write("\n... [Truncated] ...")
+        except Exception as e:
+            log.write(f"Failed to read ancient runes: {e}")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss()    
+

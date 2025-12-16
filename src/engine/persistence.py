@@ -44,6 +44,28 @@ class SaveManager:
             "timestamp": datetime.now().isoformat()
         }
     
+    def quarantine_file(self, file_path: str) -> bool:
+        """
+        Try making a logic that moves file to a quarantine folder.
+        """
+        try:
+            target = Path(file_path)
+            if not target.exists():
+                return False
+            quarantine_dir = self.SAVE_FILE.parent / "quarantines"
+            quarantine_dir.mkdir(exist_ok=True)
+
+            safe_name = f"{target.name} {int(datetime.now().timestamp())}"
+            dest = quarantine_dir / safe_name
+
+            target.rename(dest)
+
+            self.dungeon_data[str(target)]["quarantine_path"] = str(dest) 
+            return True
+        except Exception as e:
+            print(f"Quarantine failed: {e}")
+            return False
+    
     def is_defeated(self, file_path: str) -> bool:
         return file_path in self.dungeon_data
     

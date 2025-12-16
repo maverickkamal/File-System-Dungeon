@@ -19,7 +19,7 @@ class CombatEngine:
             return 1
         base_dmg = math.log10(size)
 
-        etype = enemy_entity.get("type", "Minions")
+        etype = enemy_entity.get("type", "Minion")
         multiplier = 1.0
         if etype == "Boss":
             multiplier = 2.0
@@ -30,6 +30,26 @@ class CombatEngine:
         return max(1, damage)
     
     @staticmethod
+    def calculate_xp_reward(enemy_entity: dict) -> int:
+        size = enemy_entity.get("size_bytes", 0)
+        if size == 0:
+            return 5
+        
+        base_xp = math.log10(size) * 10
+
+        etype = enemy_entity.get("type", "Minion")
+        multiplier = 1.0
+        if etype == "Boss":
+            multiplier = 5.0
+        elif etype == "Construct":
+            multiplier = 2.0
+        elif etype == "Lore":
+            multiplier = 0.5
+
+        return max(5, int(base_xp * multiplier))
+
+    
+    @staticmethod
     def resolve_turn(player: Player, enemy_entity: dict) -> list[str]:
 
         logs = []
@@ -37,18 +57,18 @@ class CombatEngine:
         p_dmg = CombatEngine.calculate_player_damage(player)
 
         enemy_entity["hp"] -= p_dmg
-        logs.append(f"You hit {enemy_entity["name"]} for {p_dmg} damage!")
+        logs.append(f'You hit {enemy_entity["name"]} for {p_dmg} damage!')
 
         if enemy_entity["hp"] <= 0:
             enemy_entity["hp"] = 0
-            logs.append(f"{enemy_entity["name"]} was defeated!")
+            logs.append(f'{enemy_entity["name"]} was defeated!')
             player.gain_xp(10)
             logs.append("You gained 10 XP!!")
             return logs
         
         e_dmg = CombatEngine.calculate_enemy_damage(enemy_entity)
         player.take_damage(e_dmg)
-        logs.append(f"{enemy_entity["name"]} hits you for {e_dmg} damage!")
+        logs.append(f'{enemy_entity["name"]} hits you for {e_dmg} damage!')
 
         if player.hp <= 0:
             logs.append("You have been defeated.... Game Over.")

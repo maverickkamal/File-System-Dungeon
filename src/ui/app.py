@@ -3,6 +3,7 @@ from textual.widgets import Header, Footer, DirectoryTree, DataTable, Label
 from textual.reactive import reactive
 from pathlib import Path
 from typing import Optional
+from rich.text import Text
 from src.ui.widgets import Sidebar, RoomView
 from src.engine.scanner import Scanner
 from src.ui.screen import CombatModal
@@ -10,6 +11,7 @@ from src.engine.player import Player
 from src.engine.persistence import SaveManager
 from src.engine.combat import CombatEngine
 from src.ui.screen import InventoryModal
+from src.ui.screen import LoreModal
 
 class FileSystemDungeonApp(App):
     """ A TUI RPG exploring the file system as dungeons. """
@@ -46,7 +48,8 @@ class FileSystemDungeonApp(App):
     BINDINGS = [
         ("d", "toggle_dark", "Toggle dark mode"),
         ("q", "quit", "Quit"),
-        ("i", "open_inventory", "Inventory")
+        ("i", "open_inventory", "Inventory"),
+        ("b", "go_back", "GO Back"),
     ]
 
     current_path = reactive(Path.home())
@@ -68,10 +71,20 @@ class FileSystemDungeonApp(App):
 
     def update_sidebar_stats(self) -> None:
         try:
-            self.query_one("#stats-title", Label).update(f"Player Level: {self.player.level}\nXP: {self.player.xp}")
+            self.query_one("#stats-title", Label).update("[bold gold1]PLAYER STATS[/]")
+            self.query_one("#stats-hp", Label).update(f"HP: {self.player.hp}/{self.player.max_hp}")
+            self.query_one("#stats-level", Label).update(f"Level: {self.player.level}")
+            self.query_one("#stats-xp", Label).update(f"XP: {self.player.xp}/{self.player.xp_to_next_level}")
 
-        except:
+        except Exception:
             pass
+
+    def action_go_back(self) -> None:
+        if self.current_path.parent != self.current_path:
+            self.current_path = self.current_path.parent
+            self.scan_current_room()
+        else:
+            self.notify("Already at root!", severity="warning")
 
     def on_directory_tree_directory_selected(self, event: DirectoryTree.DirectorySelected) -> None:
 
@@ -80,13 +93,17 @@ class FileSystemDungeonApp(App):
     
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         row_index = event.cursor_row
-        if row_index < 0 or row_index >= len(self.current_entities):
+        if row_index < 0:
             return
-        entity = self.current_entities.get(row_index)
+        if row_index not in self.current_entities:
+            return
+        entity = self.current_entities[row_index]
         if not entity:
             return
         
         if entity.get('is_dir'):
+            self.current_path = Path(entity['path'])
+            self.scan_current_room()
             return
         
         if entity.get('type') == 'Looted':
@@ -101,6 +118,9 @@ class FileSystemDungeonApp(App):
 
         if result == "run":
             self.notify("You fled safely!")
+        elif result == "read":
+            if self.active_combat_entity:
+                self.action_read_lore(self.active_combat_entity)
         elif result == "victory":
             self.notify("Victory! You looted the foe")
 
@@ -129,6 +149,13 @@ class FileSystemDungeonApp(App):
     def action_open_inventory(self) -> None:
         self.push_screen(InventoryModal(self.player.inventory))
 
+    def action_read_lore(self, entity: dict) -> None:
+        if self.player.gain_xp(50):
+            self.notify("KNOWLEDGE GAINED! Level Up!", severity="warning")
+        else:
+            self.notify("Ancient Knowledge Acquired... +50 XP")
+        self.push_screen(LoreModal(entity['path']))
+
     def scan_current_room(self) -> None:
         
         current_path_str = str(self.current_path)
@@ -138,7 +165,7 @@ class FileSystemDungeonApp(App):
             if self.player.gain_xp(10):
                 self.notify(f"LEVEL UP! You are now level {self.player.level}!")
             else:
-                self.notify("New Room Discoveres! +10 XP")
+                self.notify("New Room Discovered! +10 XP")
             self.save_manager.save_game(self.player)
             self.update_sidebar_stats()
 
@@ -152,9 +179,27 @@ class FileSystemDungeonApp(App):
         if result.access_denied:
             table.add_row("LOCKED GATE", "Access Denied", "---", "---")
             return
-        for entity in result.entities:
+        
+        if self.current_path.parent != self.current_path:
             table.add_row(
-                entity["name"],
+                "[bold magenta].. (Back)[/]",
+                "Directory",
+                "---",
+                "---"
+            )
+            self.current_entities[row_count] = {
+                "name": "..",
+                "path": str(self.current_path.parent),
+                "is_dir": True,
+                "type": "Directory"
+            }
+            row_count += 1
+
+        for entity in result.entities:
+            name_text = Text(entity["name"], style=entity.get("color", "white"))
+
+            table.add_row(
+                name_text,
                 entity["type"],
                 str(entity["hp"]),
                 str(entity["size_bytes"])
