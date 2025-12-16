@@ -18,14 +18,15 @@ class CombatModal(ModalScreen):
         grid-rows: auto auto 1fr auto;
         padding: 0 1;
         width: 70;
-        height: 25;
+        height: 60%;
+        min-height: 25;
         border: thick $background 80%;
         background: $surface;
     }
 
     #question {
         column-span: 2;
-        height: 1fr;
+        height: auto;
         width: 1fr;
         content-align: center middle;
         text-align: center;
@@ -34,7 +35,7 @@ class CombatModal(ModalScreen):
 
     #stats_container {
         column-span: 2;
-        height: 1fr;
+        height: auto;
         layout: horizontal;
     }
 
@@ -42,6 +43,7 @@ class CombatModal(ModalScreen):
         width: 1fr;
         border: solid $accent;
         padding: 1;
+        height: auto;
     }
 
     #log {
