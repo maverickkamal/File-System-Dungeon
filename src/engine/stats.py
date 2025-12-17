@@ -5,11 +5,11 @@ class StatFactory:
     """Handles game statistics for file entities"""
 
     TYPE_MAPPING = {
-        "Construct": {".py", ".js", "jsx", ".ts", ".html", ".css", ".scss" ".c", ".rs", ".java", ".go", ".cpp", ".ts"},
-        "Illusion": {".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mov", ".avi", ".mkv", ".svg", ".bmp", ".ico", ".mp3", ".wav", ".ogg"},
-        "Archive": {".zip", ".tar", ".gz", ".rar", ".7z", ".bzz", ".iso"},
-        "Boss": {".exe", ".dll", ".bin", ".sys", ".bat", ".sh", ".msi", ".app", ".info", ".cmd"},
-        "Lore": {".txt", ".md", ".json", ".log", ".xml", ".yml", ".yaml", ".ini", ".cfg", ".csv", ".toml", ".env"}
+        "Construct": {".py", ".js", "jsx", ".ts", ".html", ".css", ".scss", ".c", ".rs", ".java", ".go", ".cpp", ".ts", ".php", ".rb", ".swift", ".kt", ".dart", ".lua", ".pl", ".sql", ".r", ".m", ".h", ".hpp", ".cs"},
+        "Illusion": {".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mov", ".avi", ".mkv", ".svg", ".bmp", ".ico", ".mp3", ".wav", ".ogg", ".flac", ".aac", ".wma", ".m4a", ".webp", ".tiff", ".heic"},
+        "Archive": {".zip", ".tar", ".gz", ".rar", ".7z", ".bzz", ".iso", ".bz2", ".xz", ".cab", ".dmg", ".pkg", ".deb", ".rpm"},
+        "Boss": {".exe", ".dll", ".bin", ".sys", ".bat", ".sh", ".msi", ".app", ".info", ".cmd", ".com", ".vbs", ".ps1"},
+        "Lore": {".txt", ".md", ".json", ".log", ".xml", ".yml", ".yaml", ".ini", ".cfg", ".csv", ".toml", ".env", ".rst", ".tex"}
     }
 
     HP_PER_KB = 1
@@ -63,7 +63,7 @@ class StatFactory:
         mapping = {
             "Boss": "bold red",
             "Construct": "bold blue",
-            "Iluusion": "bold magenta",
+            "Illusion": "bold magenta",
             "Lore": "bold yellow",
             "Archive": "bold gold",
             "Portal": "bold cyan",

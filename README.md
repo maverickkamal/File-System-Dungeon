@@ -15,16 +15,29 @@ File System Dungeon is a terminal-based RPG where your folders are rooms, files 
 
 ## Installation
 
-1.  **Prerequisites**: Python 3.1*+
-2.  **Install Dependencies**:
+1.  **Prerequisites**: Python 3.10+
+2.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/maverickkamal/File-System-Dungeon.git
+    cd File-System-Dungeon
+    ```
+3.  **Set up a Virtual Environment** (Recommended):
+    ```bash
+    python -m venv .venv
+    # Windows
+    .venv\Scripts\activate
+    # macOS/Linux
+    source .venv/bin/activate
+    ```
+4.  **Install Dependencies**:
     ```bash
     pip install -r requirements.txt
     ```
     (Main dependencies: `textual`, `rich`)
 
-## How to Play 
+## How to Run the Game
 
-Run the game from the root directory:
+Start the game from the root directory:
 ```bash
 python main.py
 ```
