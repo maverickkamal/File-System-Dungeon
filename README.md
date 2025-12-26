@@ -4,6 +4,12 @@
 
 File System Dungeon is a terminal-based RPG where your folders are rooms, files are enemies, and your hard drive is the world map. Explore your computer, battle "Constructs" (code), "Illusions" (images), and "Bosses" (executables), and loot them for XP and glory.
 
+<img width="747" height="631" alt="Screenshot 2025-12-17 005455" src="https://github.com/user-attachments/assets/ff68092d-a26d-477a-b391-f55e5a555025" />
+
+<img width="455" height="572" alt="Screenshot 2025-12-17 005429" src="https://github.com/user-attachments/assets/e40270ce-3397-4524-a1f6-20253dcbc923" />
+
+
+
 ## Features
 
 *   **Explore Real Directories**: Navigate your actual file system as a dungeon map.
